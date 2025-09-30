@@ -5,9 +5,10 @@ from app.models import Empleado # importa tu modelo
 class EmpleadoForm(forms.ModelForm):
     class Meta:
         model = Empleado
-        fields = ['nombre', 'telefono', 'email']
+        fields = ['nombre', 'edad','telefono', 'email']
         widgets = {
         'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+        'edad': forms.NumberInput(attrs={'class': 'form-control'}),
         'telefono': forms.TextInput(attrs={'class': 'form-control'}),
         'email': forms.EmailInput(attrs={'class': 'form-control'}),
         }
@@ -23,6 +24,6 @@ class EmpleadoForm(forms.ModelForm):
         )
 def clean_nombre(self):
     inputNombre = self.cleaned_data['nombre']
-    if inputNombre == "Leo":
-        raise forms.ValidationError("No se aceptan más Pudus")
+    if inputNombre == "Benjamin":
+        raise forms.ValidationError("No se aceptan más Benjamines")
     return inputNombre

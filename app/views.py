@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect
 from django.db.models import Q
 from . import forms
 
-
+""" Vista para el formulario de empleados"""
 def index(request):
     form =forms.EmpleadoForm()
     if request.method=='POST':
@@ -43,3 +43,5 @@ def eliminar_empleado(request, id):
     empleado = Empleado.objects.get(id=id)
     empleado.delete()
     return redirect('trabajadores:empleados')
+
+
