@@ -1,0 +1,295 @@
+--configuracion de proyecto django MVT--
+
+-correr el projecto:-
+python manage.py runserver
+
+-crear entorno virtual:
+python -m venv env
+
+-activar entorno virtual:
+env\Scripts\activate o .venv \Scripts\activate (asegurase del nombre de la ruta dentro del entorno virtual)
+
+-instalar django:
+pip install django
+
+-crear projecto:
+django-admin startproject nombre_proyecto . (recordar el punto)
+
+-dentro del proyecto creamos
+
+---crear app:---
+python manage.py startapp nombre_app o django-admin startapp nombre_app
+
+-luego registramos la app creada en setting.py/INSTALLED_APPS
+- creamos dentro de la app una carpeta templates
+-creamos las vistas app/views.py (aqui va el crud) y añadimos:
+
+----------------------------------------------------
+# Create your views here.
+from app.models import Empleado
+from django.shortcuts import render, redirect
+from . import forms
+
+
+def index(request):
+    form =forms.EmpleadoForm()
+    if request.method=='POST':
+        form=forms.EmpleadoForm(request.POST)
+        if form.is_valid():
+            print("Formulario OK")
+            print("Nombre: ",form.cleaned_data['nombre'])
+            #ver información procesada desde el form
+            form.save()
+            return listar_empleados(request)
+    data={'form':form}
+    return render(request,'modelApp/index.html',data)
+
+
+def listar_empleados(request):
+    empleados = Empleado.objects.all()
+    print(f"Empleados: {empleados}")  # Debugging print
+    data = {'empleados': empleados}
+    return render(request, 'modelApp/empleados.html', data)
+
+
+def editar_empleado(request, id):
+    empleado = Empleado.objects.get(id=id)  # Buscar el registro a editar
+    form = forms.EmpleadoForm(instance=empleado)
+    if request.method == 'POST':
+        form = forms.EmpleadoForm(request.POST, instance=empleado)
+        if form.is_valid():
+            form.save()  # Aquí actualiza el registro en lugar de crear uno nuevo
+            return listar_empleados(request)  # redirect('employee_list')
+    else:
+        data = {'form': form}
+        return render(request, 'modelApp/index.html', data)
+
+
+def eliminar_empleado(request, id):
+    empleado = Empleado.objects.get(id=id)
+    empleado.delete()
+    return redirect('trabajadores:empleados')
+
+-----------------------------------------------
+
+-luego de agregar el crud de la vista de nuestra app, añadimos las url en app, app/urls.py
+
+from django.urls import path
+from . import views
+
+app_name="trabajadores"
+
+urlpatterns = [
+    path('', views.index, name='agregar'),
+    path('empleados/', views.listar_empleados, name="empleados"),
+    path('actualizarEmpleado/<int:id>', views.editar_empleado, name="editar"),
+    path('eliminarEmpleado/<int:id>', views.eliminar_empleado, name="eliminar"),
+]
+
+-y las incluimos en la url del projecto:
+
+from django.contrib import admin
+from django.urls import path, include #se añade include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('',include('app.urls')), #se añade la url del proyecto
+]
+
+
+- ahora creamos la carpeta templates para los archivos en app
+
+- y en models.py de app creamos la clase:
+Django funciona con un ORM (Object Relational Mapper), lo que significa que 
+describes tu modelo en Python y automáticamente Django genera las tablas y 
+columnas en la base de datos:
+
+from django.db import models
+
+# Create your models here.
+#cada clase en models.py se convierte en una table en la base de datos, esta se llamara automaticamente nombreapp_nombreclase
+
+class Empleado(models.Model):
+    nombre= models.CharField(max_length=100)
+    email = models.EmailField(unique=True)
+    telefono = models.CharField(max_length=20, blank=True)
+
+    def __str__(self):
+        return f"{self.nombre} - {self.email}"
+
+-El Django Admin es un panel web que se genera automáticamente para gestionar 
+los modelos de tu aplicación sin que tengas que programar todo el CRUD desde 
+cero.Cuando defines un modelo (ej. Empleado ), debes registrarlo en app/admin.py para que
+aparezca en el panel de administración:
+
+from django.contrib import admin
+from .models import Empleado
+
+# Register your models here.
+@admin.register(Empleado)
+class EmpleadoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'nombre', 'email', 'telefono')
+    search_fields = ('nombre', 'email')
+
+
+
+Asegúrate de que Django reconozca tanto el directorio de templates global como 
+los templates dentro de las aplicaciones, En settings.py:
+
+-configura la ruta de los templates:
+
+#configuracion de ruta de los templates
+import os
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+
+-añadir en TEMPLATES = [ 'DIRS': [TEMPLATES_DIR], #aqui agregamos la configuracion de ruta de los templates
+		[OPTIONS: 'django.template.context_processor.static', #para archivos estaticos
+
+-ahora añadimos la configuracion de archivos estaticos:
+
+#Configuracion de archivos estaticos
+STATIC_URL = 'static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")] #directorio donde buscar archivos estaticos
+
+
+
+----------------------------------------------------------------------
+
+-crear requirements.txt(esto es como un node install):
+pip freeze -> requirements.txt(cmd)
+pip freeze > requirements.txt(powershell)
+pip install -r requirements.txt (necesario)
+pip list (para mostrar lo instalado)
+y añadimos:
+
+asgiref==3.9.2
+cffi==2.0.0
+cryptography==45.0.7
+Django==5.2.6
+pycparser==2.23
+PyMySQL==1.1.2
+sqlparse==0.5.3
+tzdata==2025.2
+python-dotenv==1.1.1
+
+
+-creamos un .gitignore con:
+venv
+.venv
+__pycache__/
+*sqlite3
+*.__pycache__
+.env
+.env.*
+.vscode/
+.idea/
+.DS_Store
+
+-creamos un .env (contendra la coneccion a la db) y añadimos:
+
+# DB (Railway)
+MYSQL_HOST=centerbeam.proxy.rlwy.net
+MYSQL_PORT=53812
+MYSQL_DATABASE=railway
+MYSQL_USER=root
+MYSQL_PASSWORD=eiVTqDLuUADCjGQjeFjKcknUavshLGQj
+
+
+# Django
+DEBUG=True
+ALLOWED_HOSTS=127.0.0.1,localhost
+SECRET_KEY=django-insecure-p0qdcual2urlw&mtw7f-h6d@xv2!0lb@6)v$hxk(-ie1thi6&2
+USE_PYMYSQL=1
+
+-Y Configurar settings.py (Django + PyMySQL + .env):
+
+-pip install python-dotenv
+#cargar las variables de entorno desde .env
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(BASE_DIR, ".env"))
+except Exception:
+    pass
+
+SECRET_KEY = os.getenv("SECRET_KEY", "inseguro_para_dev")
+DEBUG = os.getenv("DEBUG","True")== "True"
+
+-pip install pymysql
+# Usar PyMySQL(lo posicionamos abajo de dotenv) 
+if os.getenv("USE_PYMYSQL", "0") == "1":
+ import pymysql
+ pymysql.install_as_MySQLdb()
+
+(esto va normal)
+DATABASES = {
+    'default': {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.getenv("MYSQL_DATABASE"),  # Use MYSQL_DATABASE
+        "USER": os.getenv("MYSQL_USER"),      # Use MYSQL_USER
+        "PASSWORD": os.getenv("MYSQL_PASSWORD"),  # Use MYSQL_PASSWORD
+        "HOST": os.getenv("MYSQL_HOST"),      # Use MYSQL_HOST
+        "PORT": int(os.getenv("MYSQL_PORT", "3306")),  # Convert to integer
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+        **(
+            {"ssl": {"ca": os.getenv("MYSQL_SSL_CA")}}
+            if os.getenv("MYSQL_SSL_CA")
+            else {}
+            ),    
+        },
+    }
+}
+
+
+-creamos una carpeta para los archivos estaticos- static/ -css/ -js/ -imagenes/
+-creamos una carpeta templates con un archivo base.html
+-Cargar archivos estáticos en los templates En base.html , ya hemos incluido {% load static %} y enlazado el CSS(esto es solo explicacion)
+
+
+
+No necesitas crear tablas manualmente; Django lo hará con migrate.
+ 9) Migraciones e inicio de admin
+ python manage.py makemigrations
+ python manage.py migrate
+ python manage.py createsuperuser
+ # ingresa usuario/clave para entrar al /admin
+
+
+10) ModelForm con validaciones y Bootstrap.
+En Django, un form.py es una clase que genera automáticamente un formulario 
+HTML basado en un modelo de tu aplicación.
+Tenemos un modelo empleado , el ModelForm crea los campos nombre , email ,  telefono. con sus 
+validaciones básicas sin que tengas que escribir todo a mano.
+Puedes añadir validaciones extra y personalizar los widgets (inputs, selects, etc.) 
+para aplicar estilos como Bootstrap.
+
+from django import forms
+from django.core import validators
+from app.models import Empleado # importa tu modelo
+
+class EmpleadoForm(forms.ModelForm):
+    class Meta:
+        model = Empleado
+        fields = ['nombre', 'telefono', 'email']
+        widgets = {
+        'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+        'telefono': forms.TextInput(attrs={'class': 'form-control'}),
+        'email': forms.EmailInput(attrs={'class': 'form-control'}),
+        }
+    # Validadores extra que no estén definidos en el modelo
+        nombre = forms.CharField(
+        min_length=5,
+        max_length=20,
+        validators=[
+        validators.MinLengthValidator(5),
+        validators.MaxLengthValidator(20),
+        ],
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+        )
+def clean_nombre(self):
+    inputNombre = self.cleaned_data['nombre']
+    if inputNombre == "Leo":
+        raise forms.ValidationError("No se aceptan más Pudus")
+    return inputNombre
+
