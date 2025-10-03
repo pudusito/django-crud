@@ -3,8 +3,6 @@ venv
 __pycache__/
 *sqlite3
 *.__pycache__
-.env
-.env.*
 .vscode/
 .idea/
 .DS_Store
